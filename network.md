@@ -7,9 +7,11 @@
     - [List all network connections](#list-open-network-connections)
     - [List all network connections on a specific port](#list-open-network-connections-specific-port)
     - [List all network connections in a port range](#list-open-network-connections-port-range)
+- [netstat](#netstat)
 
 ## lsof <a name="lsof"></a>
 又叫做 list open files. It lists all the open files (在 Linux 里, everything is a file, 比如 network socket 也是) belonging to all active processes.
+
 ### List all open files <a name="list-open-files"></a>
 ```console
 $ lsof
@@ -80,3 +82,5 @@ WeChat    16970 sihanc   86u  IPv6 0xaaf98b6c0fed43e3      0t0  TCP 10.0.0.121:6
 WeChat    16970 sihanc   96u  IPv6 0xaaf98b6c0fec2be3      0t0  TCP 10.0.0.121:61708->49.51.67.253:http (CLOSE_WAIT)
 WeChatApp 17012 sihanc   26u  IPv4 0xaaf98b70db18046b      0t0  TCP 10.0.0.121:65454->101.33.21.91:http (ESTABLISHED)
 ```
+
+## netstat <a name="netstat"></a>
