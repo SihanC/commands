@@ -8,6 +8,8 @@
     - [List all network connections on a specific port](#list-open-network-connections-specific-port)
     - [List all network connections in a port range](#list-open-network-connections-port-range)
 - [netstat](#netstat)
+    - [Default Outpout Fields](#default-output-fields)
+
 
 ## lsof <a name="lsof"></a>
 又叫做 list open files. It lists all the open files (在 Linux 里, everything is a file, 比如 network socket 也是) belonging to all active processes.
@@ -84,3 +86,18 @@ WeChatApp 17012 sihanc   26u  IPv4 0xaaf98b70db18046b      0t0  TCP 10.0.0.121:6
 ```
 
 ## netstat <a name="netstat"></a>
+netstat does nth special, It can print network statistics, but ifconfig can do that too. It can print routing tables, but route can do that too. It can print open connections, but lsof does that, and more. 用它的主要原因是因为它结合了常用的 network analysis actions into one command 和因为它是 multi-platform 的. [[Reference](https://www.pluralsight.com/resources/blog/cloud/netstat-network-analysis-and-troubleshooting-explained)]
+### Default Output Fields <a name="default-output-fields"></a>
+**Proto**: The protocol (tcp, udp, raw) used by the socket.\
+**Recv-Q|Send=Q**: How much data is in the queue for that socket, waiting to be read (Recv-Q) or sent (Send-Q). In short: if this is 0, everything's ok. If there are non-zero values anywhere, there may be trouble. [[Reference](https://www.pluralsight.com/resources/blog/cloud/netstat-network-analysis-and-troubleshooting-explained#:~:text=The%20%22Recv%2DQ%22%20and,anywhere%2C%20there%20may%20be%20trouble.)]
+```console
+➜ netstat
+Active Internet connections
+Proto Recv-Q Send-Q  Local Address          Foreign Address        (state)
+tcp4       0      0  192.168.68.54.57487    server-3-163-158.https ESTABLISHED
+tcp6       0      0  sihans-macbook-p.1024  fe80::ce8a:e332:.1024  SYN_SENT
+tcp4       0      0  192.168.68.54.57486    lb-140-82-114-26.https ESTABLISHED
+tcp4       0      0  192.168.68.54.57485    lb-140-82-114-22.https ESTABLISHED
+tcp4       0      0  192.168.68.54.57484    lb-140-82-116-5-.https ESTABLISHED
+tcp4       0      0  192.168.68.54.57483    cdn-185-199-108-.https ESTABLISHED
+tcp4       0      0  192.168.68.54.57482    lb-140-82-116-3-.https ESTABLISHED
