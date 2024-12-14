@@ -23,11 +23,11 @@ $ shasum file.txt
 ```console
 da39a3ee5e6b4b0d3255bfef95601890afd80709  file.txt
 ```
-**-a size** 来specify bit size. 比如 **-a 256**就是用sha 256
+**-a size** 来 specify bit size. 比如 **-a 256** 就是用 sha 256
 
 ## Generate RSA Key <a name="generate-rsa-key"></a>
 ### Generate RSA Private Key <a name="generate-rsa-private-key"></a>
-By default generate的是2048 bit.
+By default generate 的是 2048 bit.
 ```console
 $ openssl genrsa
 ```
@@ -35,13 +35,13 @@ Use **-out file** to output file to a specific location
 ```console
 $ openssl genrsa -out ~/Desktop/private.pem
 ```
-在后面还可以跟上要generate的key的size如果不要default的2048 bit的话.
+在后面还可以跟上要 generate 的 key 的 size 如果不要 default 的 2048 bit 的话.
 ```console
 $ openssl genrsa -out ~/Desktop/private.pem 4096
 ```
 
 ### Generate RSA Public Key <a name="generate-rsa-public-key"></a>
-需要take in已经create的private key.
+需要 take in 已经 create 的 private key.
 ```console
 $ openssl rsa -in private.pem -pubout -out public.pem
 ```

@@ -9,6 +9,12 @@
     - [List all network connections in a port range](#list-open-network-connections-port-range)
 - [netstat](#netstat)
     - [Default Outpout Fields](#default-output-fields)
+- [ss](#ss)
+    - [List all connections](#list-all-connections)
+    - [List all TCP connections](#list-all-tcp-connections)
+    - [List connections to a specific IP](#list-all-connections-specific-ip)
+    - [List IPv4|IPv6 connections](#list-ipv46-connections)
+    - [Show process ID](#show-process-id)
 
 
 ## lsof <a name="lsof"></a>
@@ -87,6 +93,8 @@ WeChatApp 17012 sihanc   26u  IPv4 0xaaf98b70db18046b      0t0  TCP 10.0.0.121:6
 
 ## netstat <a name="netstat"></a>
 netstat does nth special, It can print network statistics, but ifconfig can do that too. It can print routing tables, but route can do that too. It can print open connections, but lsof does that, and more. 用它的主要原因是因为它结合了常用的 network analysis actions into one command 和因为它是 multi-platform 的. [[Reference](https://www.pluralsight.com/resources/blog/cloud/netstat-network-analysis-and-troubleshooting-explained)]
+
+Note, 这个command已经是deprecated了, 要用可以用 ss.
 ### Default Output Fields <a name="default-output-fields"></a>
 **Proto**: The protocol (tcp, udp, raw) used by the socket.\
 **Recv-Q|Send=Q**: How much data is in the queue for that socket, waiting to be read (Recv-Q) or sent (Send-Q). In short: if this is 0, everything's ok. If there are non-zero values anywhere, there may be trouble. [[Reference](https://www.pluralsight.com/resources/blog/cloud/netstat-network-analysis-and-troubleshooting-explained#:~:text=The%20%22Recv%2DQ%22%20and,anywhere%2C%20there%20may%20be%20trouble.)]
@@ -98,6 +106,82 @@ tcp4       0      0  192.168.68.54.57487    server-3-163-158.https ESTABLISHED
 tcp6       0      0  sihans-macbook-p.1024  fe80::ce8a:e332:.1024  SYN_SENT
 tcp4       0      0  192.168.68.54.57486    lb-140-82-114-26.https ESTABLISHED
 tcp4       0      0  192.168.68.54.57485    lb-140-82-114-22.https ESTABLISHED
-tcp4       0      0  192.168.68.54.57484    lb-140-82-116-5-.https ESTABLISHED
-tcp4       0      0  192.168.68.54.57483    cdn-185-199-108-.https ESTABLISHED
-tcp4       0      0  192.168.68.54.57482    lb-140-82-116-3-.https ESTABLISHED
+```
+
+## ss <a name="ss"></a>
+[Reference](https://phoenixnap.com/kb/ss-command)
+
+Output 和上面的 netstat 的基本一样.\
+**Netid**: Type of socket. Common types are TCP, UDP, u_str (Unix stream), and u_seq (Unix sequence).
+
+By default, output omit listening socket, 只显示 non-listening (for TCP this means established connections) socket.
+```console
+$ ss
+Netid  State      Recv-Q Send-Q               Local Address:Port                        Peer Address:Port
+u_str  ESTAB      0      0                    * 25265                                   * 25267
+u_str  ESTAB      0      0                    /run/systemd/journal/stdout 19514         * 18849
+u_str  ESTAB      0      0                    * 23108                                   * 23107
+```
+### List all connections <a name="list-all-connections"></a>
+-a 或者 --all
+```console
+$ ss -a
+Netid State      Recv-Q Send-Q                Local Address:Port                        Peer Address:Port
+nl    UNCONN     0      0                     rtnl:kernel                               *
+nl    UNCONN     768    0                     tcpdiag:kernel                            *
+u_str LISTEN     0      100                   private/virtual 23118                     * 0
+```
+### List all TCP connections <a name="list-all-tcp-connections"></a>
+-t list TCP connections, -at list all TCP connections including LISTEN sockets.
+```console
+$ ss -ta
+State      Recv-Q Send-Q                   Local Address:Port                           Peer Address:Port
+LISTEN     0      128                                  *:sunrpc                                    *:*
+LISTEN     0      100                          127.0.0.1:smtp                                      *:*
+ESTAB      0      0                           10.10.0.69:57086                       169.254.169.254:http
+ESTAB      0      0                           10.10.0.69:57084                       169.254.169.254:http
+ESTAB      0      0                           10.10.0.69:57090                       169.254.169.254:http
+FIN-WAIT-1 0      1                           10.10.0.69:ssh                            218.92.0.161:52663
+ESTAB      0      0                           10.10.0.69:57094                       169.254.169.254:http
+ESTAB      0      0                           10.10.0.69:57092                       169.254.169.254:http
+ESTAB      0      0                           10.10.0.69:59002                        147.154.18.124:https
+LAST-ACK   0      1281                        10.10.0.69:ssh                            218.92.0.161:22719
+LISTEN     0      128                               [::]:sunrpc                                 [::]:*
+```
+### List connections to a specific IP <a name="list-all-connections-specific-ip"></a>
+用 src | dst [ip]
+```console
+$ ss dst 169.254.169.254
+Netid  State      Recv-Q Send-Q            Local Address:Port                           Peer Address:Port
+tcp    ESTAB      0      0                    10.10.0.69:57170                       169.254.169.254:http
+tcp    ESTAB      0      0                    10.10.0.69:57168                       169.254.169.254:http
+tcp    ESTAB      0      0                    10.10.0.69:57180                       169.254.169.254:http
+```
+### List IPv4|IPv6 connections <a name="list-ipv46-connections"></a>
+用 -4 | -6
+```console
+$ ss -4
+Netid  State      Recv-Q Send-Q            Local Address:Port                           Peer Address:Port
+tcp    ESTAB      0      36                   10.10.0.69:ssh                           50.47.239.199:60711
+tcp    ESTAB      0      0                    10.10.0.69:57344                       169.254.169.254:http
+tcp    ESTAB      0      0                    10.10.0.69:57342                       169.254.169.254:http
+tcp    FIN-WAIT-1 0      1                    10.10.0.69:ssh                            218.92.0.161:59177
+tcp    ESTAB      0      0                    10.10.0.69:57350                       169.254.169.254:http
+tcp    ESTAB      0      0                    10.10.0.69:57346                       169.254.169.254:http
+```
+### Show Process IDs <a name="show-process-id"></a>
+用 -p. Note, have to be in root to get process id. Otherwise, it will be empty.
+```console
+$ sudo ss -tp
+State      Recv-Q Send-Q                Local Address:Port                        Peer Address:Port
+ESTAB      0      0                        10.10.0.69:57466                    169.254.169.254:http                  users:(("runcommand",pid=17986,fd=17))
+ESTAB      0      36                       10.10.0.69:ssh                        50.47.239.199:60711                 users:(("sshd",pid=15315,fd=3),("sshd",pid=15312,fd=3))
+FIN-WAIT-1 0      1                        10.10.0.69:ssh                         218.92.0.161:32864
+ESTAB      0      0                        10.10.0.69:57456                    169.254.169.254:http                  users:(("runcommand",pid=17986,fd=16))
+ESTAB      0      0                        10.10.0.69:57460                    169.254.169.254:http                  users:(("runcommand",pid=17986,fd=18))
+ESTAB      0      0                        10.10.0.69:57464                    169.254.169.254:http                  users:(("runcommand",pid=17986,fd=15))
+ESTAB      0      0                        10.10.0.69:57458                    169.254.169.254:http                  users:(("runcommand",pid=17986,fd=7))
+ESTAB      0      0                        10.10.0.69:55846                     147.154.28.185:https                 users:(("gomon",pid=17962,fd=14))
+ESTAB      0      0                        10.10.0.69:57468                    169.254.169.254:http                  users:(("runcommand",pid=17986,fd=20))
+```
+### Filter connections
