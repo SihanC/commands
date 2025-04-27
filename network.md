@@ -15,6 +15,12 @@
     - [List connections to a specific IP](#list-all-connections-specific-ip)
     - [List IPv4|IPv6 connections](#list-ipv46-connections)
     - [Show process ID](#show-process-id)
+- [tcpdump](#tcpdump)
+    - [List all interfaces](#list-all-interfaces)
+    - [Capture specific interface](#capture-specific-interface)
+    - [Capture any interface](#capture-any-interface)
+    - [Skip hostname conversion](#skip-host-name-conv)
+    - [Read/Write captures to a file](#r/w-to-file)
 
 
 ## lsof <a name="lsof"></a>
@@ -184,4 +190,54 @@ ESTAB      0      0                        10.10.0.69:57458                    1
 ESTAB      0      0                        10.10.0.69:55846                     147.154.28.185:https                 users:(("gomon",pid=17962,fd=14))
 ESTAB      0      0                        10.10.0.69:57468                    169.254.169.254:http                  users:(("runcommand",pid=17986,fd=20))
 ```
-### Filter connections
+
+## tcpdump <a name="tcpdump"></a>
+### List all interfaces <a name="list-all-interfaces"></a>
+```console
+➜  ~ tcpdump -D
+1.en0 [Up, Running, Wireless, Associated]
+2.awdl0 [Up, Running, Wireless, Associated]
+3.llw0 [Up, Running, Wireless, Associated]
+4.utun0 [Up, Running]
+...
+24.stf0 [none]
+```
+### Capture specific interface <a name="capture-specific-interface"></a>
+```console
+➜  ~ tcpdump -i en0
+tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on en0, link-type EN10MB (Ethernet), snapshot length 524288 bytes
+15:25:49.563869 ARP, Request who-has 192.168.68.69 (Broadcast) tell 192.168.68.1, length 46
+15:25:49.650051 IP 192.168.68.73.49552 > resolver-a.as20055.net.domain: 16184+ PTR? 69.68.168.192.in-addr.arpa. (44)
+```
+### Capture any interface <a name="capture-any-interface"></a>
+```console
+➜  ~ sudo tcpdump -i any
+Password:
+tcpdump: data link type PKTAP
+tcpdump: verbose output suppressed, use -v[v]... for full protocol decode
+listening on any, link-type PKTAP (Apple DLT_PKTAP), snapshot length 524288 bytes
+15:27:10.941172 IP 192.168.68.73.55059 > sea09s35-in-f10.1e100.net.https: Flags [.], ack 931785855, win 2048, length 0
+15:27:11.001743 IP 192.168.68.73.59013 > resolver-a.as20055.net.domain: 22780+ PTR? 234.215.251.142.in-addr.arpa. (46)
+```
+### Skip hostname conversion <a name="skip-host-name-conv"></a>
+By default, tcpdump resolves IP addresses and ports into names. When troubleshooting network issues, it is often easier to use the IP addresses and port numbers; 
+
+Don't convert host addresses to names. This can be used to avoid DNS lookups, using -n.
+```console
+➜  ~ tcpdump -i en0 -n
+```
+Don't convert protocol and port numbers etc. to names either by using the option -nn.
+```console
+➜  ~ tcpdump -i en0 -nn
+```
+### Read/Write captures to a file <a name="r/w-to-file"></a>
+Read from a file
+```console
+➜  ~ tcpdump -i en0 -r {file_name}
+```
+Write to a file
+```console
+➜  ~ tcpdump -i en0 -w {file_name}
+```
+
