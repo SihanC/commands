@@ -1,47 +1,55 @@
 # Crypto Commands
 
 ## Table of Contents
-- [Generate md5 hash](#generate-md5-hash)
-- [Generate sha hash](#generate-sha-hash)
-- [Generate RSA Key](#generate-rsa-key)
-    - [Generate Private Key](#generate-rsa-private-key)
-    - [Generate Public Key](#generate-rsa-public-key)
+- [Hash](#hash)
+    - [Generate MD5 hash](#generate-md5-hash)
+    - [Generate SHA hash](#generate-sha-hash)
+- [RSA Key](#rsa-key)
+    - [Generate RSA private key](#generate-rsa-private-key)
+    - [Generate RSA public key](#generate-rsa-public-key)
 
-## Generate md5 hash <a name="generate-md5-hash"></a>
+## Hash <a name="hash"></a>
+### Generate MD5 hash <a name="generate-md5-hash"></a>
 ```console
 $ md5 file.txt
-```   
+```
 ```console
 MD5 (file.txt) = d41d8cd98f00b204e9800998ecf8427e
-```   
+```
 
-## Generate sha hash <a name="generate-sha-hash"></a>
-By default **shasum** use sha1, which is 160 bit and 40 hex.
+### Generate SHA hash <a name="generate-sha-hash"></a>
+默认 `shasum` 用的是 SHA-1, 也就是 160 bit, 输出是 40 个 hex characters.
 ```console
 $ shasum file.txt
 ```
 ```console
 da39a3ee5e6b4b0d3255bfef95601890afd80709  file.txt
 ```
-**-a size** 来 specify bit size. 比如 **-a 256** 就是用 sha 256
 
-## Generate RSA Key <a name="generate-rsa-key"></a>
-### Generate RSA Private Key <a name="generate-rsa-private-key"></a>
-By default generate 的是 2048 bit.
+用 `-a` 来指定 bit size, 比如 SHA-256:
+```console
+$ shasum -a 256 file.txt
+```
+
+## RSA Key <a name="rsa-key"></a>
+### Generate RSA private key <a name="generate-rsa-private-key"></a>
+默认生成的是 2048 bit private key.
 ```console
 $ openssl genrsa
 ```
-Use **-out file** to output file to a specific location
+
+用 `-out` 指定输出文件:
 ```console
 $ openssl genrsa -out ~/Desktop/private.pem
 ```
-在后面还可以跟上要 generate 的 key 的 size 如果不要 default 的 2048 bit 的话.
+
+如果不想用默认的 2048 bit, 可以在最后指定 key size:
 ```console
 $ openssl genrsa -out ~/Desktop/private.pem 4096
 ```
 
-### Generate RSA Public Key <a name="generate-rsa-public-key"></a>
-需要 take in 已经 create 的 private key.
+### Generate RSA public key <a name="generate-rsa-public-key"></a>
+需要基于已经生成好的 private key:
 ```console
 $ openssl rsa -in private.pem -pubout -out public.pem
 ```
