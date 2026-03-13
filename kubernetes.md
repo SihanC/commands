@@ -69,6 +69,8 @@ $ kubectl config set-context --current --namespace=<namespace>
 $ kubectl get pods
 ```
 
+`-o` 是 output 的意思，用来指定输出格式. `wide` 会在默认输出基础上多显示一些列，比如 Pod IP、Node 等信息.
+
 看更多信息可以用:
 ```console
 $ kubectl get pods -o wide
