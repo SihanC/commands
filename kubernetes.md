@@ -1,5 +1,9 @@
 # Kubernetes Commands
 
+Kubernetes provides a command line tool for communicating with a Kubernetes cluster's control plane through the Kubernetes API.
+
+This tool is named `kubectl`.
+
 ## Table of Contents
 - [Context and Namespace](#context-and-namespace)
     - [List contexts](#list-contexts)

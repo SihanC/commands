@@ -15,6 +15,20 @@
     - [List connections to a specific IP](#list-all-connections-specific-ip)
     - [List IPv4|IPv6 connections](#list-ipv46-connections)
     - [Show process ID](#show-process-id)
+- [ip](#ip)
+    - [List all interfaces](#ip-list-all-interfaces)
+    - [Show a specific interface](#ip-show-specific-interface)
+    - [Show IP addresses only](#ip-show-ip-addresses)
+    - [Bring an interface up/down](#ip-set-interface-updown)
+    - [Add/Delete an IP address](#ip-add-delete-address)
+    - [Show routing table](#ip-show-routing-table)
+    - [Show route to a destination](#ip-get-route)
+    - [Show neighbor table (ARP/NDP)](#ip-show-neighbor-table)
+    - [List network namespaces](#ip-netns-list)
+    - [Create/Delete a network namespace](#ip-netns-add-delete)
+    - [Run a command inside a namespace](#ip-netns-exec)
+    - [Show which namespace a process belongs to](#ip-netns-identify)
+    - [List processes in a namespace](#ip-netns-pids)
 - [tcpdump](#tcpdump)
     - [List all interfaces](#list-all-interfaces)
     - [Capture specific interface](#capture-specific-interface)
@@ -191,6 +205,143 @@ ESTAB      0      0                        10.10.0.69:55846                     
 ESTAB      0      0                        10.10.0.69:57468                    169.254.169.254:http                  users:(("runcommand",pid=17986,fd=20))
 ```
 
+## ip <a name="ip"></a>
+`ip` 是 Linux 上比较新的 network command, 用来 replace `ifconfig`, `route`, `arp` 等老 command. 常见 object 有 `addr`, `link`, `route`, `neigh`.
+
+格式基本是:
+```console
+$ ip [ OPTIONS ] OBJECT COMMAND
+```
+
+### List all interfaces <a name="ip-list-all-interfaces"></a>
+看所有 network interface 的 link 层信息, 比如 interface name, MAC address, MTU, state.
+```console
+$ ip link show
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:12:34:56 brd ff:ff:ff:ff:ff:ff
+```
+`state UP` 表示 interface 是启动状态.
+
+### Show a specific interface <a name="ip-show-specific-interface"></a>
+只看某一个 interface.
+```console
+$ ip link show dev eth0
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
+    link/ether 52:54:00:12:34:56 brd ff:ff:ff:ff:ff:ff
+```
+`dev` 是 `device` 的缩写, 用来指定对哪个 network interface 操作. 这里的 `eth0` 就是 interface name.
+
+### Show IP addresses only <a name="ip-show-ip-addresses"></a>
+看 interface 上的 IP address. `addr` 可以简写成 `a`.
+```console
+$ ip addr show
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default
+    inet 127.0.0.1/8 scope host lo
+    inet6 ::1/128 scope host
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default
+    inet 192.168.1.10/24 brd 192.168.1.255 scope global eth0
+    inet6 fe80::5054:ff:fe12:3456/64 scope link
+```
+如果只想要 brief output:
+```console
+$ ip -br addr
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+eth0             UP             192.168.1.10/24 fe80::5054:ff:fe12:3456/64
+```
+
+### Bring an interface up/down <a name="ip-set-interface-updown"></a>
+把 interface 启动或关掉.
+```console
+$ sudo ip link set dev eth0 up
+$ sudo ip link set dev eth0 down
+```
+这个 command 只改 interface state, 不一定会自动配置 IP.
+
+### Add/Delete an IP address <a name="ip-add-delete-address"></a>
+给 interface 加一个 IP, 或者删掉一个 IP.
+```console
+$ sudo ip addr add 192.168.1.20/24 dev eth0
+$ sudo ip addr del 192.168.1.20/24 dev eth0
+```
+这个通常是 temporary change, reboot 或 network service reload 以后可能会消失.
+
+### Show routing table <a name="ip-show-routing-table"></a>
+看 kernel routing table. `route` 可以简写成 `r`.
+```console
+$ ip route show
+default via 192.168.1.1 dev eth0 proto dhcp src 192.168.1.10 metric 100
+192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.10
+```
+`default via 192.168.1.1` 就是 default gateway.
+
+### Show route to a destination <a name="ip-get-route"></a>
+看如果要去某个 destination, kernel 会选哪条 route.
+```console
+$ ip route get 8.8.8.8
+8.8.8.8 via 192.168.1.1 dev eth0 src 192.168.1.10 uid 1000
+    cache
+```
+这个在 troubleshooting 很有用, 因为它会告诉你具体走哪个 interface, 用哪个 source IP.
+
+### Show neighbor table (ARP/NDP) <a name="ip-show-neighbor-table"></a>
+看 neighbor table. IPv4 基本可以理解成 ARP cache, IPv6 则是 NDP.
+```console
+$ ip neigh show
+192.168.1.1 dev eth0 lladdr aa:bb:cc:dd:ee:ff REACHABLE
+192.168.1.20 dev eth0 lladdr 11:22:33:44:55:66 STALE
+```
+常见 state 有 `REACHABLE`, `STALE`, `FAILED`.
+
+### List network namespaces <a name="ip-netns-list"></a>
+`netns` 是 network namespace. 它可以把 network stack 隔离开, 每个 namespace 可以有自己独立的 interface, route table, ARP table, iptables 等.
+```console
+$ ip netns list
+ns1
+ns2
+```
+如果没有 output, 通常表示当前没有 named namespace.
+
+### Create/Delete a network namespace <a name="ip-netns-add-delete"></a>
+创建一个新的 network namespace, 或者删掉它.
+```console
+$ sudo ip netns add ns1
+$ sudo ip netns delete ns1
+```
+`add` 以后这个 namespace 就存在了, 但一开始里面通常只有 loopback interface, 而且可能还是 down 的.
+
+### Run a command inside a namespace <a name="ip-netns-exec"></a>
+在指定的 network namespace 里执行 command.
+```console
+$ sudo ip netns exec ns1 ip addr
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN group default
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+```
+这个很常用, 比如:
+```console
+$ sudo ip netns exec ns1 ip link set lo up
+$ sudo ip netns exec ns1 ping 8.8.8.8
+```
+也就是把后面的 command 放到 `ns1` 这个 namespace 里跑.
+
+### Show which namespace a process belongs to <a name="ip-netns-identify"></a>
+看一个 process 属于哪个 named namespace.
+```console
+$ ip netns identify 12345
+ns1
+```
+这里的 `12345` 是 PID.
+
+### List processes in a namespace <a name="ip-netns-pids"></a>
+看某个 network namespace 里有哪些 process.
+```console
+$ ip netns pids ns1
+12345
+12378
+```
+这个在 troubleshooting 很有用, 可以看哪些 process 还在占用这个 namespace.
+
 ## tcpdump <a name="tcpdump"></a>
 ### List all interfaces <a name="list-all-interfaces"></a>
 ```console
@@ -240,4 +391,3 @@ Write to a file
 ```console
 ➜  ~ tcpdump -i en0 -w {file_name}
 ```
-
