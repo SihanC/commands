@@ -1,6 +1,8 @@
 # Network Commands
 
 ## Table of Contents
+- [Public IP](#public-ip)
+    - [Check public IP](#check-public-ip)
 - [lsof](#lsof)
     - [List all open files](#list-open-files)
     - [List files on a process](#list-files-specific-process)
@@ -36,6 +38,15 @@
     - [Skip hostname conversion](#skip-host-name-conv)
     - [Read/Write captures to a file](#r/w-to-file)
 
+## Public IP <a name="public-ip"></a>
+### Check public IP <a name="check-public-ip"></a>
+如果想知道外部网站看到的你的公网出口 IP, 可以直接:
+```console
+$ curl ifconfig.me
+```
+这个返回的是 public IP, 不是本机的内网 IP.
+
+比如在家里, 这个通常是你家路由器的公网 IP. 如果你在 VPN 或 proxy 后面, 这里显示的是 VPN/proxy 的出口 IP.
 
 ## lsof <a name="lsof"></a>
 又叫做 list open files. It lists all the open files (在 Linux 里, everything is a file, 比如 network socket 也是) belonging to all active processes.
