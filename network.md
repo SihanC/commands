@@ -31,6 +31,16 @@
     - [Run a command inside a namespace](#ip-netns-exec)
     - [Show which namespace a process belongs to](#ip-netns-identify)
     - [List processes in a namespace](#ip-netns-pids)
+- [iptables](#iptables)
+    - [List all rules](#iptables-list-all-rules)
+    - [List rules in a specific table](#iptables-list-specific-table)
+    - [Create a custom chain](#iptables-create-custom-chain)
+    - [Append a rule](#iptables-append-rule)
+    - [Insert a rule at the top](#iptables-insert-rule)
+    - [Delete a rule](#iptables-delete-rule)
+    - [Set default policy](#iptables-set-default-policy)
+    - [Match a port](#iptables-match-port)
+    - [Allow established connections](#iptables-established-related)
 - [tcpdump](#tcpdump)
     - [List all interfaces](#list-all-interfaces)
     - [Capture specific interface](#capture-specific-interface)
@@ -227,7 +237,7 @@ $ ip [ OPTIONS ] OBJECT COMMAND
 ### List all interfaces <a name="ip-list-all-interfaces"></a>
 看所有 network interface 的 link 层信息, 比如 interface name, MAC address, MTU, state.
 ```console
-$ ip link show
+$ ip link
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN mode DEFAULT group default
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
@@ -238,7 +248,7 @@ $ ip link show
 ### Show a specific interface <a name="ip-show-specific-interface"></a>
 只看某一个 interface.
 ```console
-$ ip link show dev eth0
+$ ip link dev eth0
 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP mode DEFAULT group default qlen 1000
     link/ether 52:54:00:12:34:56 brd ff:ff:ff:ff:ff:ff
 ```
@@ -247,11 +257,13 @@ $ ip link show dev eth0
 ### Show IP addresses only <a name="ip-show-ip-addresses"></a>
 看 interface 上的 IP address. `addr` 可以简写成 `a`.
 ```console
-$ ip addr show
+$ ip addr
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
     inet 127.0.0.1/8 scope host lo
     inet6 ::1/128 scope host
 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default
+    link/ether 52:54:00:12:34:56 brd ff:ff:ff:ff:ff:ff
     inet 192.168.1.10/24 brd 192.168.1.255 scope global eth0
     inet6 fe80::5054:ff:fe12:3456/64 scope link
 ```
@@ -281,7 +293,7 @@ $ sudo ip addr del 192.168.1.20/24 dev eth0
 ### Show routing table <a name="ip-show-routing-table"></a>
 看 kernel routing table. `route` 可以简写成 `r`.
 ```console
-$ ip route show
+$ ip route
 default via 192.168.1.1 dev eth0 proto dhcp src 192.168.1.10 metric 100
 192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.10
 ```
@@ -299,7 +311,7 @@ $ ip route get 8.8.8.8
 ### Show neighbor table (ARP/NDP) <a name="ip-show-neighbor-table"></a>
 看 neighbor table. IPv4 基本可以理解成 ARP cache, IPv6 则是 NDP.
 ```console
-$ ip neigh show
+$ ip neigh
 192.168.1.1 dev eth0 lladdr aa:bb:cc:dd:ee:ff REACHABLE
 192.168.1.20 dev eth0 lladdr 11:22:33:44:55:66 STALE
 ```
@@ -352,6 +364,123 @@ $ ip netns pids ns1
 12378
 ```
 这个在 troubleshooting 很有用, 可以看哪些 process 还在占用这个 namespace.
+
+## iptables <a name="iptables"></a>
+`iptables` 是 Linux 上用来管理 firewall rules 的 command. 它主要操作几张 table, 最常见的是 `filter` table, 里面常用的 chain 有 `INPUT`, `OUTPUT`, `FORWARD`.
+
+`rule` 是放在 `chain` 里面的, 一个 `table` 下面可以有多个 `chain`, 每个 `chain` 里再按顺序放很多 `rule`.
+
+最常见的 action 是:
+- `ACCEPT`: allow packet
+- `DROP`: silently drop packet
+- `REJECT`: reject packet and usually send error back
+
+`-j` 是 `jump` 的意思. 表示如果这条 rule match 了, 接下来要跳到哪个 target 或 chain 去处理. 最常见的是 `-j ACCEPT`, `-j DROP`, `-j REJECT`.
+
+### List all rules <a name="iptables-list-all-rules"></a>
+看当前 `filter` table 里的 rules, `-n` 表示不要做 DNS resolve, `-v` 会显示 packet/byte counter.
+```console
+$ sudo iptables -L -n -v
+Chain INPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+   10   600 ACCEPT     all  --  lo     *       0.0.0.0/0            0.0.0.0/0
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain OUTPUT (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+```
+如果想看 rule 的完整 command form, 可以用:
+```console
+$ sudo iptables -S
+```
+
+### List rules in a specific table <a name="iptables-list-specific-table"></a>
+除了默认的 `filter` table, 还有 `nat`, `mangle` 等 table. 用 `-t` 指定.
+```console
+$ sudo iptables -t nat -L -n -v
+Chain PREROUTING (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain POSTROUTING (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+```
+
+### Create a custom chain <a name="iptables-create-custom-chain"></a>
+除了内置的 `INPUT`, `OUTPUT`, `FORWARD`, 也可以自己 create custom chain.
+```console
+$ sudo iptables -N MY-CHAIN
+$ sudo iptables -A MY-CHAIN -p tcp --dport 8080 -j DROP
+$ sudo iptables -A INPUT -j MY-CHAIN
+```
+这里的意思是先 create 一个 `MY-CHAIN`, 然后把对 `8080` 的 drop rule 放进去, 最后从 `INPUT` chain 跳到这个 custom chain.
+
+如果要删 custom chain, 一般先把里面的 rule 清空, 再删 chain 本身:
+```console
+$ sudo iptables -F MY-CHAIN
+$ sudo iptables -X MY-CHAIN
+```
+
+### Append a rule <a name="iptables-append-rule"></a>
+`-A` 是 append, 把 rule 加到 chain 的最后面.
+```console
+$ sudo iptables -A INPUT -p tcp --dport 8080 -j DROP
+```
+这个 rule 的意思是: 对进来的 TCP packet, 如果 destination port 是 `8080`, 就 `DROP`.
+
+### Insert a rule at the top <a name="iptables-insert-rule"></a>
+`-I` 是 insert. 很多时候 rule order 很重要, 所以会把 rule 插到最前面.
+```console
+$ sudo iptables -I INPUT 1 -p tcp --dport 8080 -j DROP
+```
+这里的 `1` 表示插到 `INPUT` chain 的第 1 条.
+
+### Delete a rule <a name="iptables-delete-rule"></a>
+可以按行号删 rule. 一般先配合 `--line-numbers` 看 line number.
+```console
+$ sudo iptables -L INPUT -n -v --line-numbers
+$ sudo iptables -D INPUT 1
+```
+上面的 command 会删掉 `INPUT` chain 的第 1 条 rule.
+
+### Set default policy <a name="iptables-set-default-policy"></a>
+`-P` 是 policy, 用来设置 chain 的 default action.
+```console
+$ sudo iptables -P INPUT DROP
+```
+这表示如果 packet 没有 match 到前面的任何 rule, 最后就 `DROP`.
+
+这个 command 要特别小心. 如果你是在 remote host 上操作, 很容易把自己的 SSH 连线锁死.
+
+### Match a port <a name="iptables-match-port"></a>
+最常见的写法是按 protocol 和 port match.
+```console
+$ sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+$ sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+$ sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+```
+这里的 `--dport` 是 destination port. 如果要 match source port, 用 `--sport`.
+
+### Allow established connections <a name="iptables-established-related"></a>
+这是最常见也最重要的一条 rule 之一. 它允许已经建立好的连接继续收包.
+```console
+$ sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+```
+如果没有这条, 很多 return traffic 会被挡掉.
+
+一个很常见的 host firewall 基本骨架是:
+```console
+$ sudo iptables -A INPUT -i lo -j ACCEPT
+$ sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+$ sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+$ sudo iptables -P INPUT DROP
+```
+意思是:
+- allow loopback traffic
+- allow established connections
+- allow SSH
+- everything else drop
 
 ## tcpdump <a name="tcpdump"></a>
 ### List all interfaces <a name="list-all-interfaces"></a>
