@@ -389,6 +389,14 @@ $ ip netns pids ns1
 **source**: source IP 或 source subnet.\
 **destination**: destination IP 或 destination subnet.
 
+上面这些是固定 column. 如果一条 rule 还有额外的 match 条件, target 细节, 或 comment, `iptables -L` 通常会把这些信息追加显示在后面, 比如:
+- `owner UID match root`
+- `tcp dpt:3260`
+- `ctstate RELATED,ESTABLISHED`
+- `reject-with tcp-reset`
+
+所以 `iptables -L` 更像是给人看的 summary output. 如果想看更接近原始 rule syntax 的写法, 用 `iptables -S` 会更清楚.
+
 一整行 rule 可以理解成:
 ```text
 如果 packet 符合 prot / in / out / source / destination 这些条件, 就执行 target.
