@@ -377,6 +377,43 @@ $ ip netns pids ns1
 
 `-j` 是 `jump` 的意思. 表示如果这条 rule match 了, 接下来要跳到哪个 target 或 chain 去处理. 最常见的是 `-j ACCEPT`, `-j DROP`, `-j REJECT`.
 
+看 `iptables -L -n -v` output 的时候, 常见 column 是:
+
+**pkts**: 这条 rule 命中了多少个 packet.\
+**bytes**: 这条 rule 命中了多少字节的流量.\
+**target**: 如果 match 了, 接下来怎么处理. 可能是 `ACCEPT`, `DROP`, `REJECT`, 也可能是跳到别的 chain, 比如 `BareMetalInstanceServices`.\
+**prot**: protocol, 比如 `tcp`, `udp`, `icmp`, `all`.\
+**opt**: 一些额外 option. 大多数时候看到的是 `--`, 一般不用太在意.\
+**in**: packet 从哪个 interface 进来, 比如 `eth0`, `lo`, `docker0`. `*` 表示不限.\
+**out**: packet 从哪个 interface 发出去. `*` 表示不限.\
+**source**: source IP 或 source subnet.\
+**destination**: destination IP 或 destination subnet.
+
+一整行 rule 可以理解成:
+```text
+如果 packet 符合 prot / in / out / source / destination 这些条件, 就执行 target.
+```
+
+比如:
+```console
+663K 48M ACCEPT tcp -- * * 0.0.0.0/0 169.254.169.254
+```
+可以读成:
+- 已经有 663K 个 packet, 48M 字节命中过这条 rule
+- protocol 是 `tcp`
+- 入接口和出接口都不限
+- source 是任意地址
+- destination 是 `169.254.169.254`
+- match 以后执行 `ACCEPT`
+
+所以看 table 的时候, 可以按这个顺序读:
+- 先看现在是在看哪张 table
+- 再看有哪些 chain
+- 再看每个 chain 的 default policy
+- 然后从上到下看 rule
+- 看 match 以后是直接 `ACCEPT|DROP|REJECT`, 还是跳到别的 chain
+- 最后看 `pkts|bytes`, 判断哪些 rule 真正在工作
+
 ### List all rules <a name="iptables-list-all-rules"></a>
 看当前 `filter` table 里的 rules, `-n` 表示不要做 DNS resolve, `-v` 会显示 packet/byte counter.
 ```console

@@ -506,7 +506,7 @@ $ docker system df -v
 Show Docker server/client info.
 ```console
 $ docker info
-```
+```A
 
 Show Docker version.
 ```console
